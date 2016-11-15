@@ -6,8 +6,8 @@ import math
 import random
 import numpy as np
 import scipy.linalg
-from . import DataConfig
-from ..utils.nearest_correlation import nearcorr
+# from . import DataConfig
+from mdcgenutils.nearest_correlation import nearcorr
 
 
 def generate_mass(clus_cfg):
@@ -47,7 +47,7 @@ def generate_mass(clus_cfg):
                 mass[min_ind] += extra
                 need_to_add = True
 
-    return mass
+    return mass.astype(dtype=float)
 
 
 def locate_centroids(clus_cfg):
@@ -59,20 +59,21 @@ def locate_centroids(clus_cfg):
     Returns:
         np.array: Matrix (n_clusters, n_feats) with positions of centroids.
     """
-    centroids = np.zeros(clus_cfg.n_clusters, clus_cfg.n_feats)
+    centroids = np.zeros((clus_cfg.n_clusters, clus_cfg.n_feats))
 
     # TODO don't quite understand what this does
     p = 1.
-    idx = None
+    idx = 1
     for i, c in enumerate(clus_cfg._cmax):
         p *= c
         if p > 2 * clus_cfg.n_clusters + clus_cfg.outliers / clus_cfg.n_clusters:
             idx = i
             break
-    assert idx != None
+    # assert idx != None
 
     # TODO understand this variable name
-    locis = random.shuffle(range(reduce(operator.mul, clus_cfg._cmax[:idx])))
+    locis = np.arange(p)
+    random.shuffle(locis)
     clin = locis[:clus_cfg.n_clusters]
 
     for i in range(clus_cfg.n_clusters):
@@ -87,7 +88,7 @@ def locate_centroids(clus_cfg):
             centroids[i, j] = math.floor(clus_cfg._cmax[j] * np.random.rand() + 1) / (clus_cfg._cmax[j] + 1)
             centroids += (np.random.rand() - 0.5) * clus_cfg.comp_factor[i]
 
-    return centroids, locis
+    return centroids, locis, idx
 
 
 def generate_clusters(clus_cfg, batch_size = 0):
@@ -120,12 +121,12 @@ def compute_batch(clus_cfg, n_samples):
     """
     # get probabilities of each class
     mass = clus_cfg._mass
-    mass.prepend(clus_cfg.outliers)  # class 0 is now the outliers (this changes to -1 later)
-    mass /= sum(mass)
+    mass = np.insert(mass, 0, clus_cfg.outliers)  # class 0 is now the outliers (this changes to -1 further down)
+    mass /= mass.sum()
 
-    labels = np.random.choice(clus_cfg.n_clusters, n_samples, mass) - 1
+    labels = np.random.choice(clus_cfg.n_clusters + 1, n_samples, p=mass) - 1
     # label -1 corresponds to outliers
-    data = np.zeros(n_samples, clus_cfg.n_feats)
+    data = np.zeros((n_samples, clus_cfg.n_feats))
 
     # generate samples for each cluster
     for label in range(clus_cfg.n_clusters):
@@ -133,7 +134,7 @@ def compute_batch(clus_cfg, n_samples):
         indexes = (labels == label)
         samples = sum(indexes)  # nr of samples in this cluster
         if cluster.mv:
-            for f in clus_cfg.n_feats:
+            for f in range(clus_cfg.n_feats):
                 data[indexes, f] = cluster.distributions[f](samples, cluster.comp_factor)
         else:
             raise NotImplementedError('"mv" = False not implemented yet.')
@@ -141,7 +142,7 @@ def compute_batch(clus_cfg, n_samples):
         # generate correlation matrix
         corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
         iu = np.triu_indices(len(corr), k=1)
-        corr[iu] = cluster.corr * 2 * (np.random.rand(iu[0].shape) - 0.5)  # upper triangle
+        corr[iu] = cluster.corr * 2 * (np.random.rand(len(iu[0])) - 0.5)  # upper triangle
         corr.T[iu] = corr[iu]  # lower triangle
 
         # get valid correlation
@@ -169,21 +170,21 @@ def compute_batch(clus_cfg, n_samples):
     indexes = (labels == -1)
     max_val = 1.1 * np.max(data[~indexes])
     min_val = 1.1 * np.min(data[~indexes])
-    out = len(indexes)
+    out = sum(indexes)
     # s = np.zeros((out, clus_cfg.n_feats))
 
     # TODO understand this
     # TODO "vectorize" loop
     for i in range(out):
-        res = clus_cfg._locis[(i % (clus_cfg.n_clusters - len(clus_cfg._locis))) + clus_cfg.n_clusters]
+        res = clus_cfg._locis[i % len(clus_cfg._locis)]
         s = np.zeros(clus_cfg.n_feats)
         aux = np.zeros(clus_cfg.n_feats)
-        for j in range(len(clus_cfg._locis)):
+        for j in range(clus_cfg._idx):
             s[j] = res % clus_cfg._cmax[j]
             res = math.floor(res / clus_cfg._cmax[j])
             s[j] /= clus_cfg._cmax[j] + 1.
             aux[j] = (1. / (clus_cfg._cmax[j] + 1)) * np.random.rand() - (1. / (2 * (clus_cfg._cmax[j] + 1)))
-        for j in range(len(clus_cfg._locis), clus_cfg.n_feats):
+        for j in range(clus_cfg._idx, clus_cfg.n_feats):
             s[j] = math.floor(clus_cfg._cmax[j] * np.random.rand() + 1.) / (clus_cfg._cmax[j] + 1)
             aux[j] = (1 / (clus_cfg._cmax + 1)) * np.random.rand() - (1. / (2 * (clus_cfg[j] + 1)))
         data[indexes[i]] = s + aux

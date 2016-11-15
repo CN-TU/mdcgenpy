@@ -1,5 +1,8 @@
+import numpy as np
+
+
 distributions_list = {
-    'uniform': None,
+    'uniform': lambda n, param: np.random.uniform(-param, param, n),
     'gaussian': None,
     'logistic': None,
     'triangular': None,
@@ -36,7 +39,7 @@ def get_dist_function(d):
         return d
     elif type(d) == str:
         try:
-            return distributions_list[str]
+            return distributions_list[d]
         except KeyError:
             raise ValueError('Invalid distribution name "' + d + '". Available names are: ' +
                              ', '.join(distributions_list.keys()))

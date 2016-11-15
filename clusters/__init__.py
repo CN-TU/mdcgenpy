@@ -2,14 +2,15 @@ from numbers import Number
 import math
 import six
 from . import distributions as dist
+from . import generate
 
 
 class DataConfig(object):
     """
     Structure to handle the input and create clusters according to it.
     """
-    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions=0, dflag=False, mv=None, corr=0, comp_factor=0.1, alpha_n=1,
-                  scale=True, outliers=50, rotate=0, add_noise=0, n_noise=0, ki_coeff=3., **kwargs):
+    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='uniform', dflag=False, mv=True, corr=0, comp_factor=0.1, alpha_n=1,
+                  scale=True, outliers=0, rotate=False, add_noise=0, n_noise=[], ki_coeff=3., **kwargs):
         """
         Args:
             seed (int): Seed for the generation of random values.
@@ -74,13 +75,20 @@ class DataConfig(object):
             self.__dict__[key] = val
 
         self.validate_parameters()
-        self.clusters = self.get_clusters()
+        self.clusters = self.get_cluster_configs()
 
         self._mass = None
         self._centroids = None
         self._locis = None
+        self._idx = None
 
-    def get_clusters(self):
+    def generate_data(self, batch_size=0):
+        # TODO set seed
+        self._mass = generate.generate_mass(self)
+        self._centroids, self._locis, self._idx = generate.locate_centroids(self)
+        return generate.generate_clusters(self, 0)
+
+    def get_cluster_configs(self):
         return [Cluster(self, i) for i in range(self.n_clusters)]
 
     def validate_parameters(self):
@@ -98,7 +106,7 @@ class DataConfig(object):
                     raise ValueError('Total number of points must be the same as the sum of points in each cluster!')
 
         # check validity of self.distributions, and turning it into a (n_clusters, n_feats) matrix
-        if hasattr(self.distributions, '__iter__'):
+        if hasattr(self.distributions, '__iter__') and not type(self.distributions) == str:
             if len(self.distributions) != self.n_clusters:
                 raise ValueError('There must be exactly one distribution for each cluster!')
             if hasattr(self.distributions[0], '__iter__'):
@@ -172,6 +180,8 @@ class DataConfig(object):
         if not isinstance(self.add_noise, six.integer_types):
             raise ValueError('Invalid input for "add_noise"! Input must be integer.')
         if hasattr(self.n_noise, '__iter__'):
+            if len(self.n_noise) == 0:
+                self.n_noise = [[]] * self.n_clusters
             if hasattr(self.n_noise[0], '__iter__'):
                 if len(self.n_noise) != self.n_clusters:
                     raise ValueError('Invalid input for "n_noise"! List length must be the number of clusters.')
@@ -353,6 +363,7 @@ def validate_rotate(rotate):
     """
     if rotate not in [True, False]:
         raise ValueError('Invalid input for "rotate"! Input must be boolean.')
+    return True
 
 
 def validate_n_noise(n_noise, n_feats):

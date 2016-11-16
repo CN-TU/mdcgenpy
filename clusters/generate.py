@@ -149,9 +149,9 @@ def compute_batch(clus_cfg, n_samples):
 
         # compute random rotation
         if cluster.rotate:
-            rot_mat = 2 * (np.random.rand((clus_cfg.n_feats, clus_cfg.n_feats)) - 0.5)
+            rot_mat = 2 * (np.random.rand(clus_cfg.n_feats, clus_cfg.n_feats) - 0.5)
             ort = scipy.linalg.orth(rot_mat)
-            if ort.shape == rot_mat:  # check if `rot_mat` is full rank, so that `ort` keeps the same shape
+            if ort.shape == rot_mat.shape:  # check if `rot_mat` is full rank, so that `ort` keeps the same shape
                 data[indexes] = data[indexes].dot(ort)
 
 

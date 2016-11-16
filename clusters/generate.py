@@ -61,7 +61,7 @@ def locate_centroids(clus_cfg):
     """
     centroids = np.zeros((clus_cfg.n_clusters, clus_cfg.n_feats))
 
-    # TODO don't quite understand what this does
+    # TODO understand idx
     p = 1.
     idx = 1
     for i, c in enumerate(clus_cfg._cmax):
@@ -69,24 +69,20 @@ def locate_centroids(clus_cfg):
         if p > 2 * clus_cfg.n_clusters + clus_cfg.outliers / clus_cfg.n_clusters:
             idx = i
             break
-    # assert idx != None
 
-    # TODO understand this variable name
     locis = np.arange(p)
     random.shuffle(locis)
     clin = locis[:clus_cfg.n_clusters]
 
-    for i in range(clus_cfg.n_clusters):
-        res = clin[i]
-        for j in range(idx):
-            centroids[i, j] = res % clus_cfg._cmax[j]
-            res = math.floor(res / clus_cfg._cmax[j])
-            centroids[i, j] /= clus_cfg._cmax[j] + 1
-            centroids[i, j] += (np.random.rand() - 0.5) * clus_cfg.comp_factor[i]
-        assert idx < clus_cfg.n_feats  # TODO this is here because similar is in Felix's code; remove when this is understood
-        for j in range(idx, clus_cfg.n_feats):
-            centroids[i, j] = math.floor(clus_cfg._cmax[j] * np.random.rand() + 1) / (clus_cfg._cmax[j] + 1)
-            centroids += (np.random.rand() - 0.5) * clus_cfg.comp_factor[i]
+    # voodoo magic for obtaining centroids
+    clin = np.array([clin] * idx).T
+    first = (clin % clus_cfg._cmax[:idx]) / (clus_cfg._cmax[:idx]) \
+            + ((np.random.rand(clus_cfg.n_clusters, idx) - 0.5).T * np.array(clus_cfg.comp_factor * idx)).T
+    second = np.floor(clus_cfg._cmax[idx:] * np.random.rand(clus_cfg.n_clusters, clus_cfg.n_feats - idx) + 1) \
+             / (clus_cfg._cmax[idx:]) \
+             + ((np.random.rand(clus_cfg.n_clusters, clus_cfg.n_feats - idx) - 0.5).T * clus_cfg.comp_factor).T
+    centroids[:, :idx] = first.reshape((clus_cfg.n_clusters, idx))
+    centroids[:, idx:] = second.reshape((clus_cfg.n_clusters, clus_cfg.n_feats - idx))
 
     return centroids, locis, idx
 

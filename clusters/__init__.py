@@ -1,16 +1,17 @@
 from numbers import Number
 import math
 import six
+import numpy as np
 from . import distributions as dist
 from . import generate
 
 
-class DataConfig(object):
+class ClusterGenerator(object):
     """
     Structure to handle the input and create clusters according to it.
     """
-    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='uniform', dflag=False, mv=True, corr=0, comp_factor=0.1, alpha_n=1,
-                  scale=True, outliers=0, rotate=False, add_noise=0, n_noise=[], ki_coeff=3., **kwargs):
+    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='gaussian', dflag=False, mv=True, corr=0.5, comp_factor=0.1, alpha_n=1,
+                  scale=True, outliers=50, rotate=False, add_noise=0, n_noise=None, ki_coeff=3., **kwargs):
         """
         Args:
             seed (int): Seed for the generation of random values.
@@ -68,7 +69,7 @@ class DataConfig(object):
         self.outliers = outliers
         self.rotate = rotate
         self.add_noise = add_noise
-        self.n_noise = n_noise
+        self.n_noise = n_noise if n_noise is not None else []
         self.ki_coeff = ki_coeff
 
         for key, val in kwargs.items():
@@ -154,6 +155,7 @@ class DataConfig(object):
         self._cmax = [math.floor(1 + self.n_clusters / math.log(self.n_clusters))] * self.n_feats \
             if self.n_clusters > 1 else [1 + 2 * (self.outliers > 1)] * self.n_feats
         self._cmax = [round(-a) if a < 0 else round(c * a) for a, c in zip(self.alpha_n, self._cmax)]
+        self._cmax = np.array(self._cmax)
 
         # check validity of self.comp_factor, and turn it into a list with self.n_clusters elements
         if hasattr(self.comp_factor, '__iter__'):
@@ -199,7 +201,7 @@ class Cluster(object):
     def __init__(self, cfg, idx):
         """
         Args:
-            cfg (DataConfig): Configuration of the data.
+            cfg (ClusterGenerator): Configuration of the data.
             idx (int): Index of a cluster.
         """
         self.cfg = cfg

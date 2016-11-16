@@ -168,25 +168,21 @@ def compute_batch(clus_cfg, n_samples):
 
     # generate outliers
     indexes = (labels == -1)
-    max_val = 1.1 * np.max(data[~indexes])
-    min_val = 1.1 * np.min(data[~indexes])
     out = sum(indexes)
-    # s = np.zeros((out, clus_cfg.n_feats))
 
-    # TODO understand this
-    # TODO "vectorize" loop
-    for i in range(out):
-        res = clus_cfg._locis[i % len(clus_cfg._locis)]
-        s = np.zeros(clus_cfg.n_feats)
-        aux = np.zeros(clus_cfg.n_feats)
-        for j in range(clus_cfg._idx):
-            s[j] = res % clus_cfg._cmax[j]
-            res = math.floor(res / clus_cfg._cmax[j])
-            s[j] /= clus_cfg._cmax[j] + 1.
-            aux[j] = (1. / (clus_cfg._cmax[j] + 1)) * np.random.rand() - (1. / (2 * (clus_cfg._cmax[j] + 1)))
-        for j in range(clus_cfg._idx, clus_cfg.n_feats):
-            s[j] = math.floor(clus_cfg._cmax[j] * np.random.rand() + 1.) / (clus_cfg._cmax[j] + 1)
-            aux[j] = (1 / (clus_cfg._cmax + 1)) * np.random.rand() - (1. / (2 * (clus_cfg[j] + 1)))
-        data[indexes[i]] = s + aux
+    # TODO make code more readable
+    # voodoo magic for generating outliers
+    locis = clus_cfg._locis[clus_cfg.n_clusters:]
+
+    first = (locis[np.arange(out) % len(locis)] % clus_cfg._cmax[:clus_cfg._idx])\
+            / (clus_cfg._cmax[:clus_cfg._idx] + 1.) \
+            + ((1. / (clus_cfg._cmax[:clus_cfg._idx] + 1)) * np.random.rand(out)
+               - (1. / (2 * (clus_cfg._cmax[:clus_cfg._idx] + 1))))
+    second = np.floor(clus_cfg._cmax[clus_cfg._idx:] * np.random.rand(out) + 1.) \
+             / (clus_cfg._cmax[clus_cfg._idx:] + 1) \
+             + ((1 / (clus_cfg._cmax[clus_cfg._idx:] + 1)) * np.random.rand(out)
+                - (1. / (2 * (clus_cfg._cmax[clus_cfg._idx] + 1))))
+    data[indexes,:clus_cfg._idx] = first.reshape((out, clus_cfg._idx))
+    data[indexes,clus_cfg._idx:] = second.reshape((out, clus_cfg.n_feats - clus_cfg._idx))
 
     return data, labels

@@ -1,6 +1,6 @@
-from clusters import DataConfig
+from clusters import ClusterGenerator
 
-p = DataConfig()
+p = ClusterGenerator()
 
 # p: paramters
 p.seed=18

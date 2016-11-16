@@ -1,14 +1,11 @@
 import numpy as np
 
 
-distributions_list = {
-    'uniform': lambda n, param: np.random.uniform(-param, param, n),
-    'gaussian': None,
-    'logistic': None,
-    'triangular': None,
-    'gamma': None,
-    'gap': None
-}  # TODO add distribution functions
+def gap(n, param):
+    out = np.random.normal(0, param, 2 * n)
+    q25 = np.percentile(out, q=25.1)
+    q75 = np.percentile(out, q=74.9)
+    return out[(out < q25) + (out > q75)][:n]
 
 
 def check_input(distributions):
@@ -23,6 +20,16 @@ def check_input(distributions):
         (list of list of function): Functions for the distributions given as input.
     """
     return [[get_dist_function(d) for d in l] for l in distributions]
+
+
+distributions_list = {
+    'uniform': lambda n, param: np.random.uniform(-param, param, n),
+    'gaussian': lambda n, param: np.random.normal(0, param, n),
+    'logistic': lambda n, param: np.random.logistic(0, param, n),
+    'triangular': lambda n, param: np.random.triangular(-param, 0, param, n),
+    'gamma': lambda n, param: np.random.gamma(2 + 8 * np.random.rand(), param / 5, n),
+    'gap': gap
+}
 
 
 def get_dist_function(d):

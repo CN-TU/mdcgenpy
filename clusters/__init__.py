@@ -10,8 +10,8 @@ class ClusterGenerator(object):
     """
     Structure to handle the input and create clusters according to it.
     """
-    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='gaussian', dflag=False, mv=True, corr=0.5, comp_factor=0.1, alpha_n=1,
-                  scale=True, outliers=50, rotate=False, add_noise=0, n_noise=None, ki_coeff=3., **kwargs):
+    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=7, min_samples=0, distributions='gaussian', dflag=False, mv=True, corr=0., comp_factor=0.1, alpha_n=1,
+                  scale=True, outliers=50, rotate=True, add_noise=0, n_noise=None, ki_coeff=3., **kwargs):
         """
         Args:
             seed (int): Seed for the generation of random values.
@@ -85,6 +85,7 @@ class ClusterGenerator(object):
 
     def generate_data(self, batch_size=0):
         # TODO set seed
+        np.random.seed(self.seed)
         self._mass = generate.generate_mass(self)
         self._centroids, self._locis, self._idx = generate.locate_centroids(self)
         return generate.generate_clusters(self, 0)
@@ -381,7 +382,7 @@ def validate_n_noise(n_noise, n_feats):
     """
     if not hasattr(n_noise, '__iter__'):
         raise ValueError('Invalid input for "n_noise"! Input must be a list.')
-    if len(n_noise) >= n_feats:
+    if len(n_noise) > n_feats:
         raise ValueError('Invalid input for "n_noise"! Input has more dimensions than total number of dimensions.')
     if not all(isinstance(n, six.integer_types) for n in n_noise):
         raise ValueError('Invalid input for "n_noise"! Input dimensions must be integers.')

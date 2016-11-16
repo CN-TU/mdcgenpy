@@ -1,9 +1,6 @@
 from __future__ import division
 from builtins import range
-from functools import reduce
-import operator
 import math
-import random
 import numpy as np
 import scipy.linalg
 # from . import DataConfig
@@ -71,15 +68,15 @@ def locate_centroids(clus_cfg):
             break
 
     locis = np.arange(p)
-    random.shuffle(locis)
+    np.random.shuffle(locis)
     clin = locis[:clus_cfg.n_clusters]
 
     # voodoo magic for obtaining centroids
     clin = np.array([clin] * idx).T
-    first = (clin % clus_cfg._cmax[:idx]) / (clus_cfg._cmax[:idx]) \
-            + ((np.random.rand(clus_cfg.n_clusters, idx) - 0.5).T * np.array(clus_cfg.comp_factor * idx)).T
+    first = ((clin % clus_cfg._cmax[:idx]) + 1 )/ (clus_cfg._cmax[:idx] + 1) \
+            + ((np.random.rand(clus_cfg.n_clusters, idx) - 0.5) * np.array([clus_cfg.comp_factor] * idx).T)
     second = np.floor(clus_cfg._cmax[idx:] * np.random.rand(clus_cfg.n_clusters, clus_cfg.n_feats - idx) + 1) \
-             / (clus_cfg._cmax[idx:]) \
+             / (clus_cfg._cmax[idx:] + 1) \
              + ((np.random.rand(clus_cfg.n_clusters, clus_cfg.n_feats - idx) - 0.5).T * clus_cfg.comp_factor).T
     centroids[:, :idx] = first.reshape((clus_cfg.n_clusters, idx))
     centroids[:, idx:] = second.reshape((clus_cfg.n_clusters, clus_cfg.n_feats - idx))
@@ -135,16 +132,22 @@ def compute_batch(clus_cfg, n_samples):
         else:
             raise NotImplementedError('"mv" = False not implemented yet.')
 
-        # generate correlation matrix
-        corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
-        iu = np.triu_indices(len(corr), k=1)
-        corr[iu] = cluster.corr * 2 * (np.random.rand(len(iu[0])) - 0.5)  # upper triangle
-        corr.T[iu] = corr[iu]  # lower triangle
+        while True:
+            # generate correlation matrix
+            corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
+            iu = np.triu_indices(len(corr), k=1)
+            corr[iu] = cluster.corr * 2 * (np.random.rand(len(iu[0])) - 0.5)  # upper triangle
+            corr.T[iu] = corr[iu]  # lower triangle
 
-        # get valid correlation
-        corrected_corr = nearcorr(corr)
-        t_mat = np.linalg.cholesky(corrected_corr)
-        data[indexes] = data[indexes].dot(t_mat)  # apply correlation to data
+            # get valid correlation
+            corrected_corr = nearcorr(corr)
+            try:
+                t_mat = np.linalg.cholesky(corrected_corr)
+            except np.linalg.linalg.LinAlgError:
+                print('oops...')
+                continue
+            data[indexes] = data[indexes].dot(t_mat)  # apply correlation to data
+            break
 
 
         # compute random rotation
@@ -169,14 +172,14 @@ def compute_batch(clus_cfg, n_samples):
     # TODO make code more readable
     # voodoo magic for generating outliers
     locis = clus_cfg._locis[clus_cfg.n_clusters:]
-
-    first = (locis[np.arange(out) % len(locis)] % clus_cfg._cmax[:clus_cfg._idx])\
+    locis = np.array([locis[np.arange(out) % len(locis)]] * clus_cfg._idx).T
+    first = (locis % clus_cfg._cmax[:clus_cfg._idx]) \
             / (clus_cfg._cmax[:clus_cfg._idx] + 1.) \
-            + ((1. / (clus_cfg._cmax[:clus_cfg._idx] + 1)) * np.random.rand(out)
+            + ((1. / (clus_cfg._cmax[:clus_cfg._idx] + 1)) * np.random.rand(out, clus_cfg._idx)
                - (1. / (2 * (clus_cfg._cmax[:clus_cfg._idx] + 1))))
-    second = np.floor(clus_cfg._cmax[clus_cfg._idx:] * np.random.rand(out) + 1.) \
+    second = np.floor(clus_cfg._cmax[clus_cfg._idx:] * np.random.rand(out, clus_cfg.n_feats - clus_cfg._idx) + 1.) \
              / (clus_cfg._cmax[clus_cfg._idx:] + 1) \
-             + ((1 / (clus_cfg._cmax[clus_cfg._idx:] + 1)) * np.random.rand(out)
+             + ((1 / (clus_cfg._cmax[clus_cfg._idx:] + 1)) * np.random.rand(out, clus_cfg.n_feats - clus_cfg._idx)
                 - (1. / (2 * (clus_cfg._cmax[clus_cfg._idx] + 1))))
     data[indexes,:clus_cfg._idx] = first.reshape((out, clus_cfg._idx))
     data[indexes,clus_cfg._idx:] = second.reshape((out, clus_cfg.n_feats - clus_cfg._idx))

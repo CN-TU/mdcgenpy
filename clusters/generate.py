@@ -66,20 +66,23 @@ def locate_centroids(clus_cfg):
         if p > 2 * clus_cfg.n_clusters + clus_cfg.outliers / clus_cfg.n_clusters:
             idx = i
             break
+    idx += 1
 
     locis = np.arange(p)
     np.random.shuffle(locis)
     clin = locis[:clus_cfg.n_clusters]
 
     # voodoo magic for obtaining centroids
-    clin = np.array([clin] * idx).T
-    first = ((clin % clus_cfg._cmax[:idx]) + 1 )/ (clus_cfg._cmax[:idx] + 1) \
-            + ((np.random.rand(clus_cfg.n_clusters, idx) - 0.5) * np.array([clus_cfg.comp_factor] * idx).T)
-    second = np.floor(clus_cfg._cmax[idx:] * np.random.rand(clus_cfg.n_clusters, clus_cfg.n_feats - idx) + 1) \
-             / (clus_cfg._cmax[idx:] + 1) \
-             + ((np.random.rand(clus_cfg.n_clusters, clus_cfg.n_feats - idx) - 0.5).T * clus_cfg.comp_factor).T
-    centroids[:, :idx] = first.reshape((clus_cfg.n_clusters, idx))
-    centroids[:, idx:] = second.reshape((clus_cfg.n_clusters, clus_cfg.n_feats - idx))
+    res = clin
+    for j in range(idx):
+        center = ((res % clus_cfg._cmax[j]) + 1) / (clus_cfg._cmax[j] + 1)
+        noise = (np.random.rand(clus_cfg.n_clusters) - 0.5) * clus_cfg.comp_factor
+        centroids[:, j] = center + noise
+        res = np.floor(res / clus_cfg._cmax[j])
+    for j in range(idx, clus_cfg.n_feats):
+        center = np.floor(clus_cfg._cmax[j] * np.random.rand(clus_cfg.n_clusters) + 1) / (clus_cfg._cmax[j] + 1)
+        noise = (np.random.rand(clus_cfg.n_clusters) - 0.5) * clus_cfg.comp_factor
+        centroids[:, j] = center + noise
 
     return centroids, locis, idx
 
@@ -169,19 +172,17 @@ def compute_batch(clus_cfg, n_samples):
     indexes = (labels == -1)
     out = sum(indexes)
 
-    # TODO make code more readable
     # voodoo magic for generating outliers
     locis = clus_cfg._locis[clus_cfg.n_clusters:]
-    locis = np.array([locis[np.arange(out) % len(locis)]] * clus_cfg._idx).T
-    first = (locis % clus_cfg._cmax[:clus_cfg._idx]) \
-            / (clus_cfg._cmax[:clus_cfg._idx] + 1.) \
-            + ((1. / (clus_cfg._cmax[:clus_cfg._idx] + 1)) * np.random.rand(out, clus_cfg._idx)
-               - (1. / (2 * (clus_cfg._cmax[:clus_cfg._idx] + 1))))
-    second = np.floor(clus_cfg._cmax[clus_cfg._idx:] * np.random.rand(out, clus_cfg.n_feats - clus_cfg._idx) + 1.) \
-             / (clus_cfg._cmax[clus_cfg._idx:] + 1) \
-             + ((1 / (clus_cfg._cmax[clus_cfg._idx:] + 1)) * np.random.rand(out, clus_cfg.n_feats - clus_cfg._idx)
-                - (1. / (2 * (clus_cfg._cmax[clus_cfg._idx] + 1))))
-    data[indexes,:clus_cfg._idx] = first.reshape((out, clus_cfg._idx))
-    data[indexes,clus_cfg._idx:] = second.reshape((out, clus_cfg.n_feats - clus_cfg._idx))
+    res = locis[np.arange(out) % len(locis)]
+    for j in range(clus_cfg._idx):
+        center = ((res % clus_cfg._cmax[j]) + 1) / (clus_cfg._cmax[j] + 1)
+        noise = (1 / (clus_cfg._cmax[j] + 1)) * np.random.rand(out) - (1 / (2 * (clus_cfg._cmax[j] + 1)))
+        data[indexes, j] = center + noise
+        res = np.floor(res / clus_cfg._cmax[j])
+    for j in range(clus_cfg._idx, clus_cfg.n_feats):
+        center = np.floor(clus_cfg._cmax[j] * (np.random.rand(out) + 1)) / (clus_cfg._cmax[j] + 1)
+        noise = (1 / (clus_cfg._cmax[j] + 1)) * np.random.rand(out) - (1 / (2 * (clus_cfg._cmax[j] + 1)))
+        data[indexes, j] = center + noise
 
     return data, labels

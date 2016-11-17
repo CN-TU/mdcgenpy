@@ -168,7 +168,7 @@ class ClusterGenerator(object):
 
         cmax_max = max(self._cmax)
         cmax_min = min(self._cmax)
-        self.comp_factor = [cp / cmax_max if s is True else (cp / cmax_min if s is False else cp)
+        self.comp_factor = [cp / cmax_max if s else (cp / cmax_min if not s else cp)
                             for cp, s in zip(self.comp_factor, self.scale)]
 
         # check validity of self.rotate, and turn it into a list with self.n_clusters elements

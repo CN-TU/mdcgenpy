@@ -84,11 +84,14 @@ class ClusterGenerator(object):
         self._idx = None
 
     def generate_data(self, batch_size=0):
-        # TODO set seed
         np.random.seed(self.seed)
         self._mass = generate.generate_mass(self)
         self._centroids, self._locis, self._idx = generate.locate_centroids(self)
-        return generate.generate_clusters(self, 0)
+        batches = generate.generate_clusters(self, batch_size)
+        if batch_size == 0:  # if batch_size == 0, just return the data instead of the generator
+            return next(batches)
+        else:
+            return batches
 
     def get_cluster_configs(self):
         return [Cluster(self, i) for i in range(self.n_clusters)]

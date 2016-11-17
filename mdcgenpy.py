@@ -28,7 +28,6 @@ if __name__ == '__main__':
     tic = time.time()
     cputic = time.process_time()
     data = p.generate_data(batch_size=0)
-    data = next(data)
     print('Time to compute clusters: Real Time:',
           time.time() - tic,
           '; CPU Time:',

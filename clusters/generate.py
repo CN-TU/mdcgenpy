@@ -135,6 +135,7 @@ def compute_batch(clus_cfg, n_samples):
         else:
             raise NotImplementedError('"mv" = False not implemented yet.')
 
+        n_tries = 0
         while True:
             # generate correlation matrix
             corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
@@ -147,8 +148,10 @@ def compute_batch(clus_cfg, n_samples):
             try:
                 t_mat = np.linalg.cholesky(corrected_corr)
             except np.linalg.linalg.LinAlgError:
-                print('oops...')
-                continue
+                n_tries += 1
+                if n_tries < 10:
+                    continue
+                raise ZeroDivisionError('Could not generate a valid correlation matrix!')
             data[indexes] = data[indexes].dot(t_mat)  # apply correlation to data
             break
 

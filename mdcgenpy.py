@@ -8,13 +8,13 @@ from clusters import ClusterGenerator
 if __name__ == '__main__':
     p = ClusterGenerator(seed=100,
                          n_samples=3000,
-                         n_feats=20,
-                         k=400,
+                         n_feats=2,
+                         k=5,
                          min_samples=0,
                          distributions='gaussian',
                          dflag=False,  # not implemented
                          mv=True,
-                         corr=0.5,
+                         corr=0.,
                          comp_factor=0.1,
                          alpha_n=1,
                          scale=True,

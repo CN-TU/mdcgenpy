@@ -3,7 +3,6 @@ from builtins import range
 import math
 import numpy as np
 import scipy.linalg
-# from . import DataConfig
 from mdcgenutils.nearest_correlation import cholesky
 
 
@@ -11,7 +10,7 @@ def generate_mass(clus_cfg):
     """
     TODO
     Args:
-        clus_cfg (DataConfig): Configuration
+        clus_cfg (clusters.DataConfig): Configuration
 
     Returns:
         np.array: Array with len == nr of clusters, where each entry is the number of samples in the corresponding
@@ -51,7 +50,7 @@ def locate_centroids(clus_cfg):
     """
     TODO
     Args:
-        clus_cfg (DataConfig): Configuration.
+        clus_cfg (clusters.DataConfig): Configuration.
 
     Returns:
         np.array: Matrix (n_clusters, n_feats) with positions of centroids.
@@ -91,7 +90,7 @@ def generate_clusters(clus_cfg, batch_size = 0):
     """
     TODO
     Args:
-        clus_cfg (DataConfig): Configuration.
+        clus_cfg (clusters.DataConfig): Configuration.
         batch_size (int): Number of samples for each batch.
 
     Yields:
@@ -120,7 +119,7 @@ def compute_batch(clus_cfg, n_samples):
     """
     TODO
     Args:
-        clus_cfg (DataConfig): Configuration.
+        clus_cfg (clusters.DataConfig): Configuration.
         n_samples (int): Number of samples in the batch.
 
     Returns:

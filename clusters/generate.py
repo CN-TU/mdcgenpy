@@ -4,7 +4,7 @@ import math
 import numpy as np
 import scipy.linalg
 # from . import DataConfig
-from mdcgenutils.nearest_correlation import nearcorr
+from mdcgenutils.nearest_correlation import cholesky
 
 
 def generate_mass(clus_cfg):
@@ -97,6 +97,17 @@ def generate_clusters(clus_cfg, batch_size = 0):
     Yields:
 
     """
+    # generate correlation matrices
+    for cluster in clus_cfg.clusters:
+        # generate random symmetric matrix with ones in the diagonal
+        corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
+        iu = np.triu_indices(len(corr), k=1)
+        corr[iu] = cluster.corr * 2 * (np.random.rand(len(iu[0])) - 0.5)  # upper triangle
+        corr.T[iu] = corr[iu]  # lower triangle
+
+        # get valid correlation matrix
+        cluster.corr_matrix = cholesky(corr)
+
     if batch_size == 0:
         batch_size = clus_cfg.n_samples
     for batch in range(((clus_cfg.n_samples - 1) // batch_size) + 1):
@@ -135,26 +146,7 @@ def compute_batch(clus_cfg, n_samples):
         else:
             raise NotImplementedError('"mv" = False not implemented yet.')
 
-        n_tries = 0
-        while True:
-            # generate correlation matrix
-            corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
-            iu = np.triu_indices(len(corr), k=1)
-            corr[iu] = cluster.corr * 2 * (np.random.rand(len(iu[0])) - 0.5)  # upper triangle
-            corr.T[iu] = corr[iu]  # lower triangle
-
-            # get valid correlation
-            corrected_corr = nearcorr(corr)
-            try:
-                t_mat = np.linalg.cholesky(corrected_corr)
-            except np.linalg.linalg.LinAlgError:
-                n_tries += 1
-                if n_tries < 10:
-                    continue
-                raise ZeroDivisionError('Could not generate a valid correlation matrix!')
-            data[indexes] = data[indexes].dot(t_mat)  # apply correlation to data
-            break
-
+        data[indexes] = data[indexes].dot(cluster.corr_matrix)  # apply correlation to data
 
         # compute random rotation
         if cluster.rotate:

@@ -202,14 +202,16 @@ class Cluster(object):
     """
     Contains the parameters of an individual cluster.
     """
-    def __init__(self, cfg, idx):
+    def __init__(self, cfg, idx, corr_matrix=None):
         """
         Args:
             cfg (ClusterGenerator): Configuration of the data.
             idx (int): Index of a cluster.
+            corr_matrix (np.array): Valid correlation matrix to use in this cluster.
         """
         self.cfg = cfg
         self.idx = idx
+        self.corr_matrix = corr_matrix
 
     @property
     def n_feats(self):

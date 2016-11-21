@@ -10,7 +10,7 @@ class ClusterGenerator(object):
     """
     Structure to handle the input and create clusters according to it.
     """
-    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='gaussian', dflag=False, mv=True, corr=0., comp_factor=0.1, alpha_n=1,
+    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='gaussian', dflag=False, mv=True, corr=0., compactness_factor=0.1, alpha_n=1,
                   scale=True, outliers=50, rotate=True, add_noise=0, n_noise=None, ki_coeff=3., **kwargs):
         """
         Args:
@@ -31,7 +31,7 @@ class ClusterGenerator(object):
                 If a list, its length must be `k`, and each value in the list applies to one cluster.
             corr (float or list of float): Maximum (in absolute value) correlation between variables.
                 If a list, its length must be `k`, and each value in the list applies to one cluster.
-            comp_factor (float or list of float): Compactness factor.
+            compactness_factor (float or list of float): Compactness factor.
                 If a list, its length must be `k`, and each value in the list applies to one cluster.
             alpha_n (float or list of float): Determines grid hyperplanes. If alpha_n > 0, the number of hyperplanes is
                 a factor of `alpha_n * floor(1 + k/log(k))`; if alpha_n < 0, the number of hyperplanes is
@@ -62,7 +62,7 @@ class ClusterGenerator(object):
         self.dflag = dflag
         self.mv = mv
         self.corr = corr
-        self.comp_factor = comp_factor
+        self.compactness_factor = compactness_factor
         self.alpha_n = alpha_n
         self._cmax = None
         self.scale = scale
@@ -113,14 +113,15 @@ class ClusterGenerator(object):
         # check validity of self.distributions, and turning it into a (n_clusters, n_feats) matrix
         if hasattr(self.distributions, '__iter__') and not type(self.distributions) == str:
             if len(self.distributions) != self.n_clusters:
-                raise ValueError('There must be exactly one distribution for each cluster!')
+                raise ValueError('There must be exactly one distribution input for each cluster!')
             if hasattr(self.distributions[0], '__iter__'):
                 if not all(hasattr(elem, '__iter__') and len(elem) == self.n_feats for elem in self.distributions):
                     raise ValueError('Invalid distributions input! Input must have dimensions (n_clusters, n_feats).')
-            else:
-                self.distributions = [[elem] * self.n_feats for elem in self.distributions]
+            # else:
+            #     self.distributions = [[elem] * self.n_feats for elem in self.distributions]
         else:
-            self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
+            self.distributions = [self.distributions] * self.n_clusters
+            # self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
         self.distributions = dist.check_input(self.distributions)
 
         # check validity of self.mv, and turn it into a list with self.n_clusters elements
@@ -161,18 +162,18 @@ class ClusterGenerator(object):
         self._cmax = [round(-a) if a < 0 else round(c * a) for a, c in zip(self.alpha_n, self._cmax)]
         self._cmax = np.array(self._cmax)
 
-        # check validity of self.comp_factor, and turn it into a list with self.n_clusters elements
-        if hasattr(self.comp_factor, '__iter__'):
-            if len(self.comp_factor) != self.n_clusters:
-                raise ValueError('There must be exactly one compactness "comp_factor" value for each cluster!')
+        # check validity of self.compactness_factor, and turn it into a list with self.n_clusters elements
+        if hasattr(self.compactness_factor, '__iter__'):
+            if len(self.compactness_factor) != self.n_clusters:
+                raise ValueError('There must be exactly one compactness "compactness_factor" value for each cluster!')
         else:
-            self.comp_factor = [self.comp_factor] * self.n_clusters
-        assert all(validate_comp_factor(elem) for elem in self.comp_factor)
+            self.compactness_factor = [self.compactness_factor] * self.n_clusters
+        assert all(validate_compactness_factor(elem) for elem in self.compactness_factor)
 
         cmax_max = max(self._cmax)
         cmax_min = min(self._cmax)
-        self.comp_factor = [cp / cmax_max if s else (cp / cmax_min if not s else cp)
-                            for cp, s in zip(self.comp_factor, self.scale)]
+        self.compactness_factor = [cp / cmax_max if s else (cp / cmax_min if not s else cp)
+                                   for cp, s in zip(self.compactness_factor, self.scale)]
 
         # check validity of self.rotate, and turn it into a list with self.n_clusters elements
         if hasattr(self.rotate, '__iter__'):
@@ -213,6 +214,15 @@ class Cluster(object):
         self.idx = idx
         self.corr_matrix = corr_matrix
 
+    def generate_data(self, samples):
+        if hasattr(self.distributions, '__iter__'):
+            out = np.zeros((samples, self.cfg.n_feats))
+            for f in self.cfg.n_feats:
+                out[:,f] = self.distributions[f](samples, self.compactness_factor)
+            return out
+        else:
+            return self.distributions((samples, self.cfg.n_feats), self.compactness_factor)
+
     @property
     def n_feats(self):
         return self.cfg.n_feats
@@ -244,13 +254,13 @@ class Cluster(object):
         self.cfg.corr[self.idx] = value
 
     @property
-    def comp_factor(self):
-        return self.cfg.comp_factor[self.idx]
+    def compactness_factor(self):
+        return self.cfg.compactness_factor[self.idx]
 
-    @comp_factor.setter
-    def comp_factor(self, value):
-        assert validate_comp_factor(value)
-        self.cfg.comp_factor[self.idx] = value
+    @compactness_factor.setter
+    def compactness_factor(self, value):
+        assert validate_compactness_factor(value)
+        self.cfg.compactness_factor[self.idx] = value
 
     @property
     def scale(self):
@@ -312,19 +322,19 @@ def validate_corr(corr):
     return True
 
 
-def validate_comp_factor(comp_factor):
+def validate_compactness_factor(compactness_factor):
     """
-    Checks validity of input for `comp_factor`.
+    Checks validity of input for `compactness_factor`.
 
     Args:
-        comp_factor (float): Input to check validity.
+        compactness_factor (float): Input to check validity.
 
     Returns:
         bool: True if valid. Raises exception if not.
     """
-    if not isinstance(comp_factor, Number):
-        raise ValueError('Invalid input value for "comp_factor"! Values must be numeric')
-    # TODO 0 <= comp_factor <= 1 ?
+    if not isinstance(compactness_factor, Number):
+        raise ValueError('Invalid input value for "compactness_factor"! Values must be numeric')
+    # TODO 0 <= compactness_factor <= 1 ?
     return True
 
 

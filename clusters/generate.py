@@ -75,12 +75,12 @@ def locate_centroids(clus_cfg):
     res = clin
     for j in range(idx):
         center = ((res % clus_cfg._cmax[j]) + 1) / (clus_cfg._cmax[j] + 1)
-        noise = (np.random.rand(clus_cfg.n_clusters) - 0.5) * clus_cfg.comp_factor
+        noise = (np.random.rand(clus_cfg.n_clusters) - 0.5) * clus_cfg.compactness_factor
         centroids[:, j] = center + noise
         res = np.floor(res / clus_cfg._cmax[j])
     for j in range(idx, clus_cfg.n_feats):
         center = np.floor(clus_cfg._cmax[j] * np.random.rand(clus_cfg.n_clusters) + 1) / (clus_cfg._cmax[j] + 1)
-        noise = (np.random.rand(clus_cfg.n_clusters) - 0.5) * clus_cfg.comp_factor
+        noise = (np.random.rand(clus_cfg.n_clusters) - 0.5) * clus_cfg.compactness_factor
         centroids[:, j] = center + noise
 
     return centroids, locis, idx
@@ -99,13 +99,29 @@ def generate_clusters(clus_cfg, batch_size = 0):
     # generate correlation matrices
     for cluster in clus_cfg.clusters:
         # generate random symmetric matrix with ones in the diagonal
-        corr = np.ones((clus_cfg.n_feats, clus_cfg.n_feats))
-        iu = np.triu_indices(len(corr), k=1)
-        corr[iu] = cluster.corr * 2 * (np.random.rand(len(iu[0])) - 0.5)  # upper triangle
-        corr.T[iu] = corr[iu]  # lower triangle
+        # uses the vine method described here
+        # http://stats.stackexchange.com/questions/2746/how-to-efficiently-generate-random-positive-semidefinite-correlation-matrices
+        # using the correlation input parameter to set a threshold on the values of the correlation matrix
+        corr = np.eye(clus_cfg.n_feats)
+        aux = np.zeros(corr.shape)
+
+        beta_param = 4
+
+        for k in range(clus_cfg.n_feats - 1):
+            for i in range(k + 1, clus_cfg.n_feats):
+                aux[k, i] = 2 * cluster.corr * (np.random.beta(beta_param, beta_param) - 0.5)
+                p = aux[k, i]
+                for l in range(k - 1, -1, -1):
+                    p = p * np.sqrt((1 - aux[l, i]**2) * (1 - aux[l, k]**2)) + aux[l, i] * aux[l, k]
+                corr[k, i] = p
+                corr[i, k] = p
+        perm = np.random.permutation(clus_cfg.n_feats)
+        corr = corr[perm, :][:, perm]
+        cluster.corr_matrix = np.linalg.cholesky(corr)
+        cluster.correlation_matrix = corr
 
         # get valid correlation matrix
-        cluster.corr_matrix = cholesky(corr)
+        # cluster.corr_matrix = cholesky(corr)
 
     if batch_size == 0:
         batch_size = clus_cfg.n_samples
@@ -139,11 +155,19 @@ def compute_batch(clus_cfg, n_samples):
         cluster = clus_cfg.clusters[label]
         indexes = (labels == label)
         samples = sum(indexes)  # nr of samples in this cluster
-        if cluster.mv:
-            for f in range(clus_cfg.n_feats):
-                data[indexes, f] = cluster.distributions[f](samples, cluster.comp_factor)
-        else:
-            raise NotImplementedError('"mv" = False not implemented yet.')
+        data[indexes] = cluster.generate_data(samples)
+        # if cluster.mv:
+        #     for f in range(clus_cfg.n_feats):
+        #         data[indexes, f] = cluster.distributions[f](samples, cluster.compactness_factor, True)
+        # else:
+        #     data[indexes] = cluster.distributions[0](samples, cluster.compactness_factor, False)
+            # cluster_data = np.random.rand(samples, clus_cfg.n_feats) - 0.5
+            # cluster_data = math.sqrt(clus_cfg.n_feats) * cluster_data \
+            #                / np.sqrt(np.abs(cluster_data).sum(1) / clus_cfg.n_feats).reshape((samples, 1))
+            # cluster_data *= cluster.distributions[0](samples, cluster.compactness_factor, cluster_data)\
+            #     .reshape((samples, 1))
+            #
+            # data[indexes] = cluster_data
 
         data[indexes] = data[indexes].dot(cluster.corr_matrix)  # apply correlation to data
 

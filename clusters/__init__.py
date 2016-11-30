@@ -21,9 +21,11 @@ class ClusterGenerator(object):
                 cluster. In that case, the number of clusters will be the length of the list.
             min_samples (int): Minimum number of samples in each cluster. If 0, the default minimum for a cluster with N
                 elements is N/(ki_coeff*k).
-            distributions (str or function or list): Distribution to be used. If list, its length must be `k`, and each
-                element in the list must either be a valid str (indicating the distribution to be used) OR a function
-                which implements the distribution OR a list of str/functions with length `m`.
+            distributions (str or function or clusters.distributions.Distribution or list): Distribution to be used.
+                If list, its length must be `k`, and each element in the list must either be a valid str (indicating the
+                distribution to be used) OR a function which implements the distribution OR a list of str/functions with
+                length `m`.
+                Instances of cluster.distributions.Distribution can also be used.
             dflag (bool or list of bool): TODO: is this needed?
             mv (bool or list of bool): Multivariate distributions or distributions defining intra-distances. If True,
                 distributions define feature values (multivariate). If False, distributions define intra-distances.
@@ -75,6 +77,7 @@ class ClusterGenerator(object):
         for key, val in kwargs.items():
             self.__dict__[key] = val
 
+        self._distributions = None
         self.validate_parameters()
         self.clusters = self.get_cluster_configs()
 
@@ -122,7 +125,7 @@ class ClusterGenerator(object):
         else:
             self.distributions = [self.distributions] * self.n_clusters
             # self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
-        self.distributions = dist.check_input(self.distributions)
+        self._distributions = dist.check_input(self.distributions)
 
         # check validity of self.mv, and turn it into a list with self.n_clusters elements
         if hasattr(self.mv, '__iter__'):
@@ -131,6 +134,7 @@ class ClusterGenerator(object):
         else:
             self.mv = [self.mv] * self.n_clusters
         assert all(validate_mv(elem) for elem in self.mv)
+
 
         # check validity of self.scale, and turn it into a list with self.n_clusters elements
         if hasattr(self.scale, '__iter__'):
@@ -217,11 +221,11 @@ class Cluster(object):
     def generate_data(self, samples):
         if hasattr(self.distributions, '__iter__'):
             out = np.zeros((samples, self.cfg.n_feats))
-            for f in self.cfg.n_feats:
-                out[:,f] = self.distributions[f](samples, self.compactness_factor)
+            for f in range(self.cfg.n_feats):
+                out[:,f] = self.distributions[f](samples, self.mv, self.compactness_factor)
             return out
         else:
-            return self.distributions((samples, self.cfg.n_feats), self.compactness_factor)
+            return self.distributions((samples, self.cfg.n_feats), self.mv, self.compactness_factor)
 
     @property
     def n_feats(self):
@@ -229,11 +233,12 @@ class Cluster(object):
 
     @property
     def distributions(self):
-        return self.cfg.distributions[self.idx]
+        return self.cfg._distributions[self.idx]
 
     @distributions.setter
     def distributions(self, value):
-        self.cfg.distributions[self.idx] = [dist.get_dist_function(d) for d in value]
+        self.cfg._distributions[self.idx] = [dist.get_dist_function(d) for d in value] if hasattr(value, '__iter__') \
+            else dist.get_dist_function(value)
 
     @property
     def mv(self):

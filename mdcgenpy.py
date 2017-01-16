@@ -2,7 +2,7 @@ from __future__ import print_function
 import time
 import itertools
 import matplotlib.pyplot as plt
-from clusters import ClusterGenerator
+from mdcgenpy.clusters import ClusterGenerator
 
 
 if __name__ == '__main__':

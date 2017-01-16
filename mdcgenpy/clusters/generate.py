@@ -3,7 +3,6 @@ from builtins import range
 import math
 import numpy as np
 import scipy.linalg
-from mdcgenutils.nearest_correlation import cholesky
 
 
 def generate_mass(clus_cfg):
@@ -128,7 +127,7 @@ def generate_clusters(clus_cfg, batch_size = 0):
     for batch in range(((clus_cfg.n_samples - 1) // batch_size) + 1):
         n_samples = min(batch_size, clus_cfg.n_samples - batch * batch_size)
         data, labels = compute_batch(clus_cfg, n_samples)
-        yield data, labels
+        yield data, np.reshape(labels, (len(labels), 1))
 
 
 def compute_batch(clus_cfg, n_samples):

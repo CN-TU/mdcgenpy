@@ -97,7 +97,7 @@ def get_dist_function(d):
         return d
     elif hasattr(d, '__call__'):
         return Distribution(d)
-    elif type(d) == str:
+    elif isinstance(d, string_types):
         try:
             return Distribution(distributions_list[d])
         except KeyError:

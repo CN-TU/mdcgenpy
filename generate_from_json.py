@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys
 import numpy as np
-from mdcgenpy.interface import json as js
+from mdcgenpy.interface import json_processing as js
 
 
 if (sys.version_info > (3, 0)):

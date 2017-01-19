@@ -36,7 +36,7 @@ if __name__ == '__main__':
     plts = []
     colors = itertools.cycle(['b', 'g', 'r', 'c', 'm', 'y', 'k'])
     for lab in range(-1, p.n_clusters):
-        indexes = data[1] == lab
+        indexes = data[1].ravel() == lab
         plts.append(plt.scatter(data[0][indexes,0], data[0][indexes,1], color=next(colors)))
     # plt.legend(plts, (str(l) for l in range(-1, p.n_clusters)))
     plt.xlim(-0.2, 1.2)

@@ -11,11 +11,16 @@ def get_cluster_generator(input_file):
     Returns:
         ClusterGenerator: Resulting ClusterGenerator from the input file.
     """
-    try:
-        data = input_file.read()
-    except AttributeError:
-        data = open(input_file).read()
-    data = json.loads(data)
+    try:  # if input_file is string in json format
+        data = json.loads(input_file.decode('string_escape'))
+    except TypeError:
+        data = json.loads(input_file.decode())
+    except:
+        try:  # if input_file is an open file
+            data = input_file.read()
+        except AttributeError:  # if input_file is a filename
+            data = open(input_file).read()
+        data = json.loads(data)
 
     out = ClusterGenerator(**data)
 

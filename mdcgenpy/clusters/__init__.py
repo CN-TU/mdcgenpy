@@ -1,4 +1,5 @@
 from numbers import Number
+import random
 import math
 import six
 import numpy as np
@@ -10,7 +11,7 @@ class ClusterGenerator(object):
     """
     Structure to handle the input and create clusters according to it.
     """
-    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, distributions='gaussian', dflag=False, mv=True, corr=0., compactness_factor=0.1, alpha_n=1,
+    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, possible_distributions=['gaussian', 'uniform'], distributions=None, dflag=False, mv=True, corr=0., compactness_factor=0.1, alpha_n=1,
                   scale=True, outliers=50, rotate=True, add_noise=0, n_noise=None, ki_coeff=3., **kwargs):
         """
         Args:
@@ -21,6 +22,7 @@ class ClusterGenerator(object):
                 cluster. In that case, the number of clusters will be the length of the list.
             min_samples (int): Minimum number of samples in each cluster. If 0, the default minimum for a cluster with N
                 elements is N/(ki_coeff*k).
+            possible_distributions (list): List of distributions to choose from.
             distributions (str or function or clusters.distributions.Distribution or list): Distribution to be used.
                 If list, its length must be `k`, and each element in the list must either be a valid str (indicating the
                 distribution to be used) OR a function which implements the distribution OR a list of str/functions with
@@ -60,6 +62,7 @@ class ClusterGenerator(object):
         self.k = k
         self.n_clusters = len(k) if type(k) == list else k
         self.min_samples = min_samples
+        self.possible_distributions = possible_distributions
         self.distributions = distributions
         self.dflag = dflag
         self.mv = mv
@@ -113,19 +116,24 @@ class ClusterGenerator(object):
                 if sum(self.k) != self.n_samples:
                     raise ValueError('Total number of points must be the same as the sum of points in each cluster!')
 
-        # check validity of self.distributions, and turning it into a (n_clusters, n_feats) matrix
-        if hasattr(self.distributions, '__iter__') and not type(self.distributions) == str:
-            if len(self.distributions) != self.n_clusters:
-                raise ValueError('There must be exactly one distribution input for each cluster!')
-            if hasattr(self.distributions[0], '__iter__'):
-                if not all(hasattr(elem, '__iter__') and len(elem) == self.n_feats for elem in self.distributions):
-                    raise ValueError('Invalid distributions input! Input must have dimensions (n_clusters, n_feats).')
-            # else:
-            #     self.distributions = [[elem] * self.n_feats for elem in self.distributions]
+        if self.distributions is not None:
+            # check validity of self.distributions, and turning it into a (n_clusters, n_feats) matrix
+            if hasattr(self.distributions, '__iter__') and not type(self.distributions) == str:
+                if len(self.distributions) != self.n_clusters:
+                    raise ValueError('There must be exactly one distribution input for each cluster!')
+                if hasattr(self.distributions[0], '__iter__'):
+                    if not all(hasattr(elem, '__iter__') and len(elem) == self.n_feats for elem in self.distributions):
+                        raise ValueError('Invalid distributions input! Input must have dimensions (n_clusters, n_feats).')
+                # else:
+                #     self.distributions = [[elem] * self.n_feats for elem in self.distributions]
+            else:
+                self.distributions = [self.distributions] * self.n_clusters
+                # self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
+            self._distributions = dist.check_input(self.distributions)
         else:
-            self.distributions = [self.distributions] * self.n_clusters
-            # self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
-        self._distributions = dist.check_input(self.distributions)
+            random.seed(self.seed)
+            self.distributions = [random.choice(self.possible_distributions)] * self.n_clusters
+            self._distributions = dist.check_input(self.distributions)
 
         # check validity of self.mv, and turn it into a list with self.n_clusters elements
         if hasattr(self.mv, '__iter__'):

@@ -1,6 +1,6 @@
 {
     "seed": 100,
-    "n_samples": 3000000,
+    "n_samples": 3000,
     "n_feats": 2,
     "k": 20,
     "min_samples": 0,

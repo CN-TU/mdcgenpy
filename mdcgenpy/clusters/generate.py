@@ -176,13 +176,12 @@ def compute_batch(clus_cfg, n_samples):
             if ort.shape == rot_mat.shape:  # check if `rot_mat` is full rank, so that `ort` keeps the same shape
                 data[indexes] = data[indexes].dot(ort)
 
+        # add centroid
+        data[indexes] += clus_cfg._centroids[label]
 
         # add noisy variables
         for d in cluster.n_noise:
             data[indexes, d] = np.random.rand(samples)
-
-        # add centroid
-        data[indexes] += clus_cfg._centroids[label]
 
     # generate outliers
     indexes = (labels == -1)

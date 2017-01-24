@@ -11,49 +11,71 @@ class ClusterGenerator(object):
     """
     Structure to handle the input and create clusters according to it.
     """
-    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, possible_distributions=['gaussian', 'uniform'], distributions=None, dflag=False, mv=True, corr=0., compactness_factor=0.1, alpha_n=1,
+    def  __init__(self, seed=1, n_samples=2000, n_feats=2, k=5, min_samples=0, possible_distributions=None,
+                  distributions=None, mv=True, corr=0., compactness_factor=0.1, alpha_n=1,
                   scale=True, outliers=50, rotate=True, add_noise=0, n_noise=None, ki_coeff=3., **kwargs):
         """
         Args:
-            seed (int): Seed for the generation of random values.
+            seed (int): Seed for the generation of random values. Useful for consistency.
             n_samples (int): Number of samples to generate.
             n_feats (int): Number of dimensions/features for each sample.
-            k (int or list of int): Number of clusters to generate. If a list, specifies the number of samples in each
-                cluster. In that case, the number of clusters will be the length of the list.
-            min_samples (int): Minimum number of samples in each cluster. If 0, the default minimum for a cluster with N
-                elements is N/(ki_coeff*k).
-            possible_distributions (list): List of distributions to choose from.
-            distributions (str or function or clusters.distributions.Distribution or list): Distribution to be used.
-                If list, its length must be `k`, and each element in the list must either be a valid str (indicating the
-                distribution to be used) OR a function which implements the distribution OR a list of str/functions with
-                length `m`.
-                Instances of cluster.distributions.Distribution can also be used.
-            dflag (bool or list of bool): TODO: is this needed?
-            mv (bool or list of bool): Multivariate distributions or distributions defining intra-distances. If True,
-                distributions define feature values (multivariate). If False, distributions define intra-distances.
+            k (int or list of int): Number of clusters to generate. If input is a list, each element in it specifies the
+                number of samples in each cluster. In that case, the number of clusters will be the length of the list.
+            min_samples (int): Minimum number of samples in each cluster. If 0, the default minimum for a cluster with
+                :math:`N` samples is :math:`N/(\\text{ki_coeff}*k)`.
+            possible_distributions (list): List of distributions to randomly choose from. Each element in this list
+                must either be a valid str (valid str ared defined in :data:`~.distributions.valid_distributions`
+                OR a function which implements the distribution OR an instance of
+                :class:`~.distributions.Distribution`.
+
+                This parameter is overridden by ``distributions``, when set.
+            distributions (str or function or .distributions.Distribution or list): Distribution to be used.
+                If list, its length must be ``k``, and each element in the list must either be a valid str (indicating
+                the distribution to be used) OR a function which implements the distribution OR a list of str/functions
+                with length ``n_feats``.
+
+                Instances of :class:`~.distributions.Distribution` can also be used.
+
+                Valid str are defined in :data:`~.distributions.valid_distributions`.
+            mv (bool or list of bool or None): Multivariate distributions or distributions defining intra-distances. If
+                True, distributions define feature values (multivariate). If False, distributions define
+                intra-distances.
+
                 If None, this choice is made at random.
-                If a list, its length must be `k`, and each value in the list applies to one cluster.
+
+                If a list, its length must be ``k``, and each value in the list applies to one cluster.
             corr (float or list of float): Maximum (in absolute value) correlation between variables.
-                If a list, its length must be `k`, and each value in the list applies to one cluster.
+
+                If a list, its length must be ``k``, and each value in the list applies to one cluster.
             compactness_factor (float or list of float): Compactness factor.
-                If a list, its length must be `k`, and each value in the list applies to one cluster.
-            alpha_n (float or list of float): Determines grid hyperplanes. If alpha_n > 0, the number of hyperplanes is
-                a factor of `alpha_n * floor(1 + k/log(k))`; if alpha_n < 0, the number of hyperplanes is
-                abs(alpha_n).
-                If a list, its length must be `m`, and each value in the list applies to one dimension.
+
+                If a list, its length must be ``k``, and each value in the list applies to one cluster.
+            alpha_n (float or list of float): Determines grid hyperplanes. If :math:`\\alpha_n > 0`, the number of
+                hyperplanes is a factor of
+                :math:`\\alpha_n * \\left \\lfloor{1 + \\frac{k}{\\log(k)}}\\right \\rfloor`.
+
+                If :math:`\\alpha_n < 0`, the number of hyperplanes is :math:`|\\alpha_n|`.
+
+                If a list, its length must be ``n_feats``, and each value in the list applies to one dimension.
             scale (bool or list of bool): Optimizes cluster separation based on grid size. If True, scale based on min
                 distance between grid hyperplanes. If False, scale based on max distance between grid hyperplanes.
+
                 If None, does not scale.
-                If a list, its length must be `k`, and each value in the list applies to one cluster.
+
+                If a list, its length must be ``k``, and each value in the list applies to one cluster.
             outliers (int): Number of outliers.
             rotate (bool or list of bool): If True, clusters can rotate.
-                If a list, its length must be `k`, and each value in the list applies to one cluster.
+
+                If a list, its length must be ``k``, and each value in the list applies to one cluster.
             add_noise (int): Add this number of noisy dimensions.
             n_noise (list): Parameter that manages noisy dimensions.
-                If a list of int (of size <= `n_feats`, and each element is >= 0 and < `n_feats`), each dimension
-                listed (0-indexed) will have only noise.
-                If a list of list of int (of size == `k`, and each element is a list of size <= `n_feats`, with values
-                >= 0 and < `n_feats`), each list indicates the noisy dimensions for a particular cluster.
+
+                If a list of int (of size :math:`\\leq` `n_feats`, and each element is :math:`\\geq 0` and
+                :math:`<` `n_feats`), each dimension listed (0-indexed) will have only noise.
+
+                If a list of list of int (of length ``k``, and each element is a list of length :math:`\\leq` `n_feats`,
+                with values :math:`\\geq 0` and :math:`<` `n_feats`), each list indicates the noisy dimensions for a
+                particular cluster.
             ki_coeff (float): Coefficient used to define the default minimum number of samples per cluster.
         """
         self.seed = seed
@@ -62,9 +84,9 @@ class ClusterGenerator(object):
         self.k = k
         self.n_clusters = len(k) if type(k) == list else k
         self.min_samples = min_samples
-        self.possible_distributions = possible_distributions
+        self.possible_distributions = possible_distributions if possible_distributions is not None \
+            else ['gaussian', 'uniform']
         self.distributions = distributions
-        self.dflag = dflag
         self.mv = mv
         self.corr = corr
         self.compactness_factor = compactness_factor
@@ -76,6 +98,8 @@ class ClusterGenerator(object):
         self.add_noise = add_noise
         self.n_noise = n_noise if n_noise is not None else []
         self.ki_coeff = ki_coeff
+
+        random.seed(self.seed)
 
         for key, val in kwargs.items():
             self.__dict__[key] = val
@@ -131,8 +155,7 @@ class ClusterGenerator(object):
                 # self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
             self._distributions = dist.check_input(self.distributions)
         else:
-            random.seed(self.seed)
-            self.distributions = [random.choice(self.possible_distributions)] * self.n_clusters
+            self.distributions = [random.choice(self.possible_distributions) for _ in range(self.n_clusters)]
             self._distributions = dist.check_input(self.distributions)
 
         # check validity of self.mv, and turn it into a list with self.n_clusters elements
@@ -140,7 +163,10 @@ class ClusterGenerator(object):
             if len(self.mv) != self.n_clusters:
                 raise ValueError('There must be exactly one "mv" parameter for each cluster!')
         else:
-            self.mv = [self.mv] * self.n_clusters
+            if self.mv is None:
+                self.mv = [random.choice([True, False]) for _ in range(self.n_clusters)]
+            else:
+                self.mv = [self.mv] * self.n_clusters
         assert all(validate_mv(elem) for elem in self.mv)
 
 
@@ -215,6 +241,13 @@ class Cluster(object):
     """
     Contains the parameters of an individual cluster.
     """
+
+    settables = ['distributions', 'mv', 'corr', 'compactness_factor', 'scale', 'rotate', 'n_noise']
+    """
+    List of settable properties of Cluster. These are the parameters which can be set at a cluster level, and override
+    the parameters of the cluster generator.
+    """
+
     def __init__(self, cfg, idx, corr_matrix=None):
         """
         Args:
@@ -245,8 +278,12 @@ class Cluster(object):
 
     @distributions.setter
     def distributions(self, value):
-        self.cfg._distributions[self.idx] = [dist.get_dist_function(d) for d in value] if hasattr(value, '__iter__') \
-            else dist.get_dist_function(value)
+        if isinstance(value, six.string_types):
+            self.cfg._distributions[self.idx] = dist.get_dist_function(value)
+        elif hasattr(value, '__iter__'):
+            self.cfg._distributions[self.idx] = [dist.get_dist_function(d) for d in value]
+        else:
+            self.cfg._distributions[self.idx] = dist.get_dist_function(value)
 
     @property
     def mv(self):

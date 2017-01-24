@@ -1,44 +1,29 @@
+#!/usr/bin/env python
+
 from __future__ import print_function
-import time
-import itertools
-import matplotlib.pyplot as plt
-from mdcgenpy.clusters import ClusterGenerator
+import sys
+import numpy as np
+from mdcgenpy.interface import json_processing as js
+
+
+if (sys.version_info > (3, 0)):
+    stdout = sys.stdout.buffer
+else:
+    stdout = sys.stdout
 
 
 if __name__ == '__main__':
-    p = ClusterGenerator(seed=100,
-                         n_samples=3000,
-                         n_feats=2,
-                         k=20,
-                         min_samples=0,
-                         distributions='gap',
-                         dflag=False,  # not implemented
-                         mv=True,
-                         corr=0.,
-                         compactness_factor=0.1,
-                         alpha_n=1,
-                         scale=True,
-                         outliers=50,
-                         rotate=True,
-                         add_noise=0,  # not implemented
-                         n_noise=[],
-                         ki_coeff=3.
-                         )
+    p = js.get_cluster_generator(sys.argv[1])
 
-    tic = time.time()
-    cputic = time.process_time()
-    data = p.generate_data(batch_size=0)
-    print('Time to compute clusters: Real Time:',
-          time.time() - tic,
-          '; CPU Time:',
-          time.process_time() - cputic)
-    print(data)
-    plts = []
-    colors = itertools.cycle(['b', 'g', 'r', 'c', 'm', 'y', 'k'])
-    for lab in range(-1, p.n_clusters):
-        indexes = data[1].ravel() == lab
-        plts.append(plt.scatter(data[0][indexes,0], data[0][indexes,1], color=next(colors)))
-    # plt.legend(plts, (str(l) for l in range(-1, p.n_clusters)))
-    plt.xlim(-0.2, 1.2)
-    plt.ylim(-0.2, 1.2)
-    plt.show()
+    try:
+        batch_size = int(sys.argv[2])
+    except IndexError:
+        batch_size = 0
+    data = p.generate_data(batch_size=batch_size)
+
+    fmt = ','.join('%.18e' for _ in range(p.n_feats)) + ',%i'
+    if batch_size == 0:  # received data, and not a generator
+        np.savetxt(stdout, np.hstack(data), fmt=fmt)
+    else:
+        for d in data:
+            np.savetxt(stdout, np.hstack(d), fmt=fmt)

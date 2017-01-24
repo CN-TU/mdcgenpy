@@ -23,7 +23,7 @@ def get_cluster_generator(input_file):
 
     for clust_data, clust in zip(data['clusters'], out.clusters):
         for key in clust_data:
-            clust[key] = clust_data[key]
+            setattr(clust, key, clust_data[key])
 
     return out
 

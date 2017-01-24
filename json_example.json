@@ -1,18 +1,17 @@
 {
-    "seed": 100,
     "n_samples": 3000,
     "n_feats": 2,
-    "k": 20,
-    "min_samples": 0,
-    "distributions":"gap",
+    "k": 3,
+    "possible_distributions":["gaussian", "uniform"],
     "mv": true,
     "corr": 0.0,
     "compactness_factor": 0.1,
     "alpha_n": 1,
-    "scale": true,
     "outliers": 50,
     "rotate": true,
-    "add_noise": 0,
-    "n_noise": [],
-    "ki_coeff": 3
+    "clusters": [
+        {"distributions": "uniform", "corr": 0.5},
+        {},
+        {"mv": null, "rotate": false}
+    ]
 }

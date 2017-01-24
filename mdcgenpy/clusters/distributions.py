@@ -4,6 +4,23 @@ import math
 import numpy as np
 
 
+distributions_list = {
+    'uniform': lambda shape, param: np.random.uniform(-param, param, shape),
+    'gaussian': lambda shape, param: np.random.normal(0, param, shape),
+    'logistic': lambda shape, param: np.random.logistic(0, param, shape),
+    'triangular': lambda shape, param: np.random.triangular(-param, 0, param, shape),
+    'gamma': lambda shape, param: np.random.gamma(2 + 8 * np.random.rand(), param / 5, shape),
+    'gap': lambda shape, param: gap(shape, param)
+}
+"""List of distributions for which you can just provide a string as input."""
+
+# Aliases for distributions should be put here.
+distributions_list['normal'] = distributions_list['gaussian']
+
+valid_distributions = distributions_list.keys()
+"""List of valid strings for distributions."""
+
+
 def _validate_shape(shape):
     if not (hasattr(shape, '__iter__') and (len(shape) == 2 or len(shape) == 1))\
             and not isinstance(shape, integer_types):
@@ -69,18 +86,6 @@ def check_input(distributions):
     """
     return [[get_dist_function(d) for d in l] if hasattr(l, '__iter__') and not isinstance(l, string_types) else get_dist_function(l)
             for l in distributions]
-
-
-distributions_list = {
-    'uniform': lambda shape, param: np.random.uniform(-param, param, shape),
-    'gaussian': lambda shape, param: np.random.normal(0, param, shape),
-    'logistic': lambda shape, param: np.random.logistic(0, param, shape),
-    'triangular': lambda shape, param: np.random.triangular(-param, 0, param, shape),
-    'gamma': lambda shape, param: np.random.gamma(2 + 8 * np.random.rand(), param / 5, shape),
-    'gap': lambda shape, param: gap(shape, param)
-}
-# aliases
-distributions_list['normal'] = distributions_list['gaussian']
 
 
 def get_dist_function(d):

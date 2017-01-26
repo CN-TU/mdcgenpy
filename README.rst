@@ -22,7 +22,7 @@ Generating data outside Python
 
 It is also possible to use mdcgenpy without knowing python.
 
-To do this, you just need to give as input a JSON file (check specification details :ref:`here <https://www.cn.tuwien.ac.at/ns-dksp/mdcgenpy/docs/html/json_format.html>`).
+To do this, you just need to give as input a JSON file (check specification details `here <https://www.cn.tuwien.ac.at/ns-dksp/mdcgenpy/docs/html/json_format.html>`_).
 Using the ``mdcgenpy.py`` script, the output will be sent in CSV format to stdout.
 
 Example:
@@ -43,4 +43,4 @@ Features
 Documentation
 -------------
 
-Documentation for this project can be found at :ref:`https://www.cn.tuwien.ac.at/ns-dksp/mdcgenpy/docs/html/index.html`.
+Documentation for this project can be found at `https://www.cn.tuwien.ac.at/ns-dksp/mdcgenpy/docs/html/index.html`.

@@ -105,7 +105,7 @@ class ClusterGenerator(object):
             self.__dict__[key] = val
 
         self._distributions = None
-        self.validate_parameters()
+        self._validate_parameters()
         self.clusters = self.get_cluster_configs()
 
         self._mass = None
@@ -126,7 +126,7 @@ class ClusterGenerator(object):
     def get_cluster_configs(self):
         return [Cluster(self, i) for i in range(self.n_clusters)]
 
-    def validate_parameters(self):
+    def _validate_parameters(self):
         """
         Method to validate the parameters of the object.
         """
@@ -148,11 +148,8 @@ class ClusterGenerator(object):
                 if hasattr(self.distributions[0], '__iter__'):
                     if not all(hasattr(elem, '__iter__') and len(elem) == self.n_feats for elem in self.distributions):
                         raise ValueError('Invalid distributions input! Input must have dimensions (n_clusters, n_feats).')
-                # else:
-                #     self.distributions = [[elem] * self.n_feats for elem in self.distributions]
             else:
                 self.distributions = [self.distributions] * self.n_clusters
-                # self.distributions = [[self.distributions] * self.n_feats] * self.n_clusters
             self._distributions = dist.check_input(self.distributions)
         else:
             self.distributions = [random.choice(self.possible_distributions) for _ in range(self.n_clusters)]
@@ -167,7 +164,7 @@ class ClusterGenerator(object):
                 self.mv = [random.choice([True, False]) for _ in range(self.n_clusters)]
             else:
                 self.mv = [self.mv] * self.n_clusters
-        assert all(validate_mv(elem) for elem in self.mv)
+        assert all(_validate_mv(elem) for elem in self.mv)
 
 
         # check validity of self.scale, and turn it into a list with self.n_clusters elements
@@ -176,7 +173,7 @@ class ClusterGenerator(object):
                 raise ValueError('There must be exactly one "scale" parameter for each cluster!')
         else:
             self.scale = [self.scale] * self.n_clusters
-        assert all(validate_scale(elem) for elem in self.scale)
+        assert all(_validate_scale(elem) for elem in self.scale)
 
         # check validity of self.corr, and turn it into a list with self.n_clusters elements
         if hasattr(self.corr, '__iter__'):
@@ -184,7 +181,7 @@ class ClusterGenerator(object):
                 raise ValueError('There must be exactly one correlation "corr" value for each cluster!')
         else:
             self.corr = [self.corr] * self.n_clusters
-        assert all(validate_corr(elem) for elem in self.corr)
+        assert all(_validate_corr(elem) for elem in self.corr)
 
         # check validity of self.alpha_n, and turn it into a list with self.n_feats elements
         if hasattr(self.alpha_n, '__iter__'):
@@ -192,7 +189,7 @@ class ClusterGenerator(object):
                 raise ValueError('There must be exactly one hyperplane parameter "alpha_n" value for each dimension!')
         else:
             self.alpha_n = [self.alpha_n] * self.n_feats
-        assert all(validate_alpha_n(elem) for elem in self.alpha_n)
+        assert all(_validate_alpha_n(elem) for elem in self.alpha_n)
 
         # set self._cmax
         self._cmax = [math.floor(1 + self.n_clusters / math.log(self.n_clusters))] * self.n_feats \
@@ -206,7 +203,7 @@ class ClusterGenerator(object):
                 raise ValueError('There must be exactly one compactness "compactness_factor" value for each cluster!')
         else:
             self.compactness_factor = [self.compactness_factor] * self.n_clusters
-        assert all(validate_compactness_factor(elem) for elem in self.compactness_factor)
+        assert all(_validate_compactness_factor(elem) for elem in self.compactness_factor)
 
         cmax_max = max(self._cmax)
         cmax_min = min(self._cmax)
@@ -219,7 +216,7 @@ class ClusterGenerator(object):
                 raise ValueError('There must be exactly one rotate value for each cluster!')
         else:
             self.rotate = [self.rotate] * self.n_clusters
-        assert all(validate_rotate(elem) for elem in self.rotate)
+        assert all(_validate_rotate(elem) for elem in self.rotate)
 
         # check validity of self.add_noise and self.n_noise
         if not isinstance(self.add_noise, six.integer_types):
@@ -234,7 +231,7 @@ class ClusterGenerator(object):
                 self.n_noise = [self.n_noise] * self.n_clusters
         else:
             raise ValueError('Invalid input for "n_noise"! Input must be a list.')
-        assert all(validate_n_noise(elem, self.n_feats) for elem in self.n_noise)
+        assert all(_validate_n_noise(elem, self.n_feats) for elem in self.n_noise)
 
 
 class Cluster(object):
@@ -291,7 +288,7 @@ class Cluster(object):
 
     @mv.setter
     def mv(self, value):
-        assert validate_mv(value)
+        assert _validate_mv(value)
         self.cfg.mv[self.idx] = value
 
     @property
@@ -300,7 +297,7 @@ class Cluster(object):
 
     @corr.setter
     def corr(self, value):
-        assert validate_corr(value)
+        assert _validate_corr(value)
         self.cfg.corr[self.idx] = value
 
     @property
@@ -309,7 +306,7 @@ class Cluster(object):
 
     @compactness_factor.setter
     def compactness_factor(self, value):
-        assert validate_compactness_factor(value)
+        assert _validate_compactness_factor(value)
         self.cfg.compactness_factor[self.idx] = value
 
     @property
@@ -318,7 +315,7 @@ class Cluster(object):
 
     @scale.setter
     def scale(self, value):
-        assert validate_scale(value)
+        assert _validate_scale(value)
         self.cfg.scale[self.idx] = value
 
     @property
@@ -327,7 +324,7 @@ class Cluster(object):
 
     @rotate.setter
     def rotate(self, value):
-        assert validate_rotate(value)
+        assert _validate_rotate(value)
         self.cfg.rotate[self.idx] = value
 
     @property
@@ -336,11 +333,11 @@ class Cluster(object):
 
     @n_noise.setter
     def n_noise(self, value):
-        assert validate_n_noise(value, self.cfg.n_feats)
+        assert _validate_n_noise(value, self.cfg.n_feats)
         self.cfg.n_noise[self.idx] = value
 
 
-def validate_mv(mv):
+def _validate_mv(mv):
     """
     Checks validity of input for `mv`.
 
@@ -355,7 +352,7 @@ def validate_mv(mv):
     return True
 
 
-def validate_corr(corr):
+def _validate_corr(corr):
     """
     Checks validity of input for `corr`.
 
@@ -372,7 +369,7 @@ def validate_corr(corr):
     return True
 
 
-def validate_compactness_factor(compactness_factor):
+def _validate_compactness_factor(compactness_factor):
     """
     Checks validity of input for `compactness_factor`.
 
@@ -388,7 +385,7 @@ def validate_compactness_factor(compactness_factor):
     return True
 
 
-def validate_alpha_n(alpha_n):
+def _validate_alpha_n(alpha_n):
     """
     Checks validity of input for `alpha_n`.
 
@@ -405,7 +402,7 @@ def validate_alpha_n(alpha_n):
     return True
 
 
-def validate_scale(scale):
+def _validate_scale(scale):
     """
     Checks validity of input for `scale`.
 
@@ -420,7 +417,7 @@ def validate_scale(scale):
     return True
 
 
-def validate_rotate(rotate):
+def _validate_rotate(rotate):
     """
     Checks validity of input for `rotate`.
     Args:
@@ -434,7 +431,7 @@ def validate_rotate(rotate):
     return True
 
 
-def validate_n_noise(n_noise, n_feats):
+def _validate_n_noise(n_noise, n_feats):
     """
     Checks validity of input for `n_noise`.
 

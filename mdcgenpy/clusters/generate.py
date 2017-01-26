@@ -6,7 +6,8 @@ import scipy.linalg
 
 def generate_mass(clus_cfg):
     """
-    TODO
+    Get the number of samples to generate for each cluster.
+
     Args:
         clus_cfg (clusters.DataConfig): Configuration
 
@@ -46,7 +47,8 @@ def generate_mass(clus_cfg):
 
 def locate_centroids(clus_cfg):
     """
-    TODO
+    Generate locations for the centroids of the clusters.
+
     Args:
         clus_cfg (clusters.DataConfig): Configuration.
 
@@ -55,7 +57,6 @@ def locate_centroids(clus_cfg):
     """
     centroids = np.zeros((clus_cfg.n_clusters, clus_cfg.n_feats))
 
-    # TODO understand idx
     p = 1.
     idx = 1
     for i, c in enumerate(clus_cfg._cmax):
@@ -86,13 +87,15 @@ def locate_centroids(clus_cfg):
 
 def generate_clusters(clus_cfg, batch_size = 0):
     """
-    TODO
+    Generate data.
+
     Args:
         clus_cfg (clusters.DataConfig): Configuration.
         batch_size (int): Number of samples for each batch.
 
     Yields:
-
+        np.array: Generated samples.
+        np.array: Labels for the samples.
     """
     # generate correlation matrices
     for cluster in clus_cfg.clusters:
@@ -118,9 +121,6 @@ def generate_clusters(clus_cfg, batch_size = 0):
         cluster.corr_matrix = np.linalg.cholesky(corr)
         cluster.correlation_matrix = corr
 
-        # get valid correlation matrix
-        # cluster.corr_matrix = cholesky(corr)
-
     if batch_size == 0:
         batch_size = clus_cfg.n_samples
     for batch in range(((clus_cfg.n_samples - 1) // batch_size) + 1):
@@ -131,7 +131,8 @@ def generate_clusters(clus_cfg, batch_size = 0):
 
 def compute_batch(clus_cfg, n_samples):
     """
-    TODO
+    Generates one batch of data.
+
     Args:
         clus_cfg (clusters.DataConfig): Configuration.
         n_samples (int): Number of samples in the batch.
@@ -154,18 +155,6 @@ def compute_batch(clus_cfg, n_samples):
         indexes = (labels == label)
         samples = sum(indexes)  # nr of samples in this cluster
         data[indexes] = cluster.generate_data(samples)
-        # if cluster.mv:
-        #     for f in range(clus_cfg.n_feats):
-        #         data[indexes, f] = cluster.distributions[f](samples, cluster.compactness_factor, True)
-        # else:
-        #     data[indexes] = cluster.distributions[0](samples, cluster.compactness_factor, False)
-            # cluster_data = np.random.rand(samples, clus_cfg.n_feats) - 0.5
-            # cluster_data = math.sqrt(clus_cfg.n_feats) * cluster_data \
-            #                / np.sqrt(np.abs(cluster_data).sum(1) / clus_cfg.n_feats).reshape((samples, 1))
-            # cluster_data *= cluster.distributions[0](samples, cluster.compactness_factor, cluster_data)\
-            #     .reshape((samples, 1))
-            #
-            # data[indexes] = cluster_data
 
         data[indexes] = data[indexes].dot(cluster.corr_matrix)  # apply correlation to data
 

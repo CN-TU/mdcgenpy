@@ -52,15 +52,15 @@ In general, the format of an input JSON file must be something of this type:
 
 The generator parameters are as defined in the :py:class:`Cluster Generator class <mdcgenpy.clusters.ClusterGenerator>`
 .
-The `"clusters"` keyword is for overriding the generator parameters for specific clusters.
+The ``"clusters"`` keyword is for overriding the generator parameters for specific clusters.
 
-All the parameters in the JSON file are optional (including the `"clusters"` keyword).
+All the parameters in the JSON file are optional (including the ``"clusters"``  keyword).
 
 Overriding Parameters for Specific Clusters
 -------------------------------------------
 
-After the generator parameters, there is an (optional) `"clusters"` keyword.
-If the `"clusters"` keyword is supplied, a list of at most the same length as the number of clusters must be supplied.
+After the generator parameters, there is an (optional) ``"clusters"`` keyword.
+If the ``"clusters"`` keyword is supplied, a list of at most the same length as the number of clusters must be supplied.
 Each element of this list contains cluster-specific parameters, which overrule the general parameters of the cluster
 generator, for that cluster.
 

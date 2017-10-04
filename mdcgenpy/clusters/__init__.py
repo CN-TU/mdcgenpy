@@ -24,7 +24,7 @@ class ClusterGenerator(object):
             min_samples (int): Minimum number of samples in each cluster. If 0, the default minimum for a cluster with
                 :math:`N` samples is :math:`N/(\\text{ki_coeff}*k)`.
             possible_distributions (list): List of distributions to randomly choose from. Each element in this list
-                must either be a valid str (valid str ared defined in :data:`~.distributions.valid_distributions`
+                must either be a valid str (valid str are defined in :data:`~.distributions.valid_distributions`
                 OR a function which implements the distribution OR an instance of
                 :class:`~.distributions.Distribution`.
 

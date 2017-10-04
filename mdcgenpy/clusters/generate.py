@@ -97,7 +97,7 @@ def generate_clusters(clus_cfg, batch_size = 0):
         np.array: Generated samples.
         np.array: Labels for the samples.
     """
-    # generate correlation matrices
+    # generate correlation and rotation matrices
     for cluster in clus_cfg.clusters:
         # generate random symmetric matrix with ones in the diagonal
         # uses the vine method described here
@@ -121,12 +121,25 @@ def generate_clusters(clus_cfg, batch_size = 0):
         cluster.corr_matrix = np.linalg.cholesky(corr)
         cluster.correlation_matrix = corr
 
+        # rotation matrix
+        if cluster.rotate:
+            cluster.rotation_matrix = get_rotation_matrix(clus_cfg.n_feats)
+
     if batch_size == 0:
         batch_size = clus_cfg.n_samples
     for batch in range(((clus_cfg.n_samples - 1) // batch_size) + 1):
         n_samples = min(batch_size, clus_cfg.n_samples - batch * batch_size)
         data, labels = compute_batch(clus_cfg, n_samples)
         yield data, np.reshape(labels, (len(labels), 1))
+
+
+def get_rotation_matrix(n_feats):
+    rot_mat = 2 * (np.random.rand(n_feats, n_feats) - 0.5)
+    ort = scipy.linalg.orth(rot_mat)
+    if ort.shape == rot_mat.shape:  # check if `rot_mat` is full rank, so that `ort` keeps the same shape
+        return ort
+    else:
+        return get_rotation_matrix(n_feats)
 
 
 def compute_batch(clus_cfg, n_samples):
@@ -158,12 +171,9 @@ def compute_batch(clus_cfg, n_samples):
 
         data[indexes] = data[indexes].dot(cluster.corr_matrix)  # apply correlation to data
 
-        # compute random rotation
+        # apply rotation
         if cluster.rotate:
-            rot_mat = 2 * (np.random.rand(clus_cfg.n_feats, clus_cfg.n_feats) - 0.5)
-            ort = scipy.linalg.orth(rot_mat)
-            if ort.shape == rot_mat.shape:  # check if `rot_mat` is full rank, so that `ort` keeps the same shape
-                data[indexes] = data[indexes].dot(ort)
+            data[indexes] = data[indexes].dot(cluster.rotation_matrix)
 
         # add centroid
         data[indexes] += clus_cfg._centroids[label]

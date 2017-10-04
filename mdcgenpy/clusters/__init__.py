@@ -233,6 +233,10 @@ class ClusterGenerator(object):
             raise ValueError('Invalid input for "n_noise"! Input must be a list.')
         assert all(_validate_n_noise(elem, self.n_feats) for elem in self.n_noise)
 
+    @property
+    def mass(self):
+        return self._mass
+
 
 class Cluster(object):
     """
@@ -335,6 +339,37 @@ class Cluster(object):
     def n_noise(self, value):
         assert _validate_n_noise(value, self.cfg.n_feats)
         self.cfg.n_noise[self.idx] = value
+
+
+class ScheduledClusterGenerator(ClusterGenerator):
+    """
+    This cluster generator takes a schedule and all the ClusterGenerator arguments, and activates only the specified
+    clusters in the schedule, for each time step.
+    A time step is defined as one get call to ``self.mass``, which is done when generating each new batch.
+    That is, one time step is one call to :func:`.generate.compute_batch`.
+    """
+    def __init__(self, schedule, *args, **kwargs):
+        """
+        Args:
+            schedule (list): List in which each element contains the indexes of the clusters active in the respective
+                time step.
+            *args: args for :meth:`ClusterGenerator.__init__`.
+            **kwargs: kwargs for :meth:`ClusterGenerator.__init__`.
+        """
+        super(ScheduledClusterGenerator, self).__init__(*args, **kwargs)
+        self.cur_time = 0
+        self.schedule = schedule
+
+    @property
+    def mass(self):
+        mass = self._mass.copy()
+        cur_clusters = self.schedule[self.cur_time % len(self.schedule)]
+        for c in range(len(mass)):  # set the mass of clusters not scheduled now to 0
+            if c not in cur_clusters:
+                mass[c] = 0
+
+        self.cur_time += 1  # increase time
+        return mass
 
 
 def _validate_mv(mv):

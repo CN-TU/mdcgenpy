@@ -154,7 +154,7 @@ def compute_batch(clus_cfg, n_samples):
         np.array: Generated sample.
     """
     # get probabilities of each class
-    mass = clus_cfg._mass
+    mass = clus_cfg.mass
     mass = np.insert(mass, 0, clus_cfg.outliers)  # class 0 is now the outliers (this changes to -1 further down)
     mass /= mass.sum()
 

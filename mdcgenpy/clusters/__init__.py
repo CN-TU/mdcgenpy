@@ -70,12 +70,12 @@ class ClusterGenerator(object):
             add_noise (int): Add this number of noisy dimensions.
             n_noise (list): Parameter that manages noisy dimensions.
 
-                If a list of int (of size :math:`\\leq` `n_feats`, and each element is :math:`\\geq 0` and
-                :math:`<` `n_feats`), each dimension listed (0-indexed) will have only noise.
+                If a list of int (of size :math:`\\leq` ``n_feats``, and each element is :math:`\\geq 0` and
+                :math:`<` ``n_feats``), each dimension listed (0-indexed) will have only noise.
 
-                If a list of list of int (of length ``k``, and each element is a list of length :math:`\\leq` `n_feats`,
-                with values :math:`\\geq 0` and :math:`<` `n_feats`), each list indicates the noisy dimensions for a
-                particular cluster.
+                If a list of list of int (of length ``k``, and each element is a list of length :math:`\\leq`
+                ``n_feats``, with values :math:`\\geq 0` and :math:`<` ``n_feats``), each list indicates the noisy
+                dimensions for a particular cluster.
             ki_coeff (float): Coefficient used to define the default minimum number of samples per cluster.
         """
         self.seed = seed

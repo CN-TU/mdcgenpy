@@ -47,7 +47,7 @@ setup(
     # What does your project relate to?
     keywords='data generation clustering',
 
-    packages=['mdcgenpy'],
+    packages=find_packages(),
 
     install_requires=install_requires
 )

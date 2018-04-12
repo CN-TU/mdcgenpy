@@ -9,7 +9,7 @@ A variety of customization options are available, in order to allow for a wide r
 
 Using the generator is simple, and can even be used without parameters:
 
-.. code-block :: python
+.. code-block:: python
 
     import mdcgenpy
 
@@ -18,6 +18,15 @@ Using the generator is simple, and can even be used without parameters:
 
     # Get tuple with a numpy array with samples and another with labels
     data = cluster_gen.generate_data()
+
+Installation
+------------
+
+The package can be installed with pip:
+
+.. code-block:: bash
+
+    $ pip install git+https://github.com/CN-TU/mdcgenpy
 
 Generating data outside Python
 ------------------------------
@@ -29,7 +38,7 @@ Using the ``mdcgenpy.py`` script, the output will be sent in CSV format to stdou
 
 Example:
 
-.. code-block :: bash
+.. code-block:: bash
 
     $ ./mdcgenpy.py input_parameters.json > output.csv
 
